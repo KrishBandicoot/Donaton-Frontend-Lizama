@@ -1,176 +1,253 @@
-import { useState, useEffect } from 'react'
-import './App.css'
+import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
+import './App.css';
 
-function App() {
-  const [formData, setFormData] = useState({
-    tipo: 'Alimento',
-    recurso: '',
-    cantidad: 1,
-    centroOrigen: 'Centro Central Santiago',
-    destino: 'Refugio Maipú'
-  });
-
-  // Imágenes para el carrusel simulando emergencias
+// --- COMPONENTE HOME (Página Principal) ---
+function Home({ user }) {
+  const [opciones, setOpciones] = useState({ tiposAyuda: [], centrosAcopio: [], destinos: [] });
+  const [formData, setFormData] = useState({ tipo: '', recurso: '', cantidad: 1, centroOrigen: '', destino: '' });
   const [imagenes] = useState([
-    "https://images.unsplash.com/photo-1602202651478-f6ed348e3573?auto=format&fit=crop&w=1200&q=80", // Desastre/Terremoto
-    "https://images.unsplash.com/photo-1542848284-8afa78a08ccb?auto=format&fit=crop&w=1200&q=80", // Situación calle/Apoyo
-    "https://images.unsplash.com/photo-1614746684705-eb101e4db9a8?auto=format&fit=crop&w=1200&q=80"  // Incendios forestales
+    "https://images.unsplash.com/photo-1602202651478-f6ed348e3573?auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1542848284-8afa78a08ccb?auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1614746684705-eb101e4db9a8?auto=format&fit=crop&w=1200&q=80"
   ]);
   const [imagenActual, setImagenActual] = useState(0);
 
-  // Efecto para cambiar la imagen cada 4 segundos
+  // Cargar las opciones desde el backend (BFF)
   useEffect(() => {
-    const intervalo = setInterval(() => {
-      setImagenActual((prev) => (prev + 1) % imagenes.length);
-    }, 4000);
+    fetch('http://localhost:8080/api/dashboard/opciones')
+      .then(res => res.json())
+      .then(data => {
+        setOpciones(data);
+        setFormData({
+          tipo: data.tiposAyuda[0] || '',
+          recurso: '',
+          cantidad: 1,
+          centroOrigen: data.centrosAcopio[0] || '',
+          destino: data.destinos[0] || ''
+        });
+      })
+      .catch(err => console.error("Error cargando opciones:", err));
+
+    const intervalo = setInterval(() => setImagenActual(prev => (prev + 1) % imagenes.length), 4000);
     return () => clearInterval(intervalo);
   }, [imagenes.length]);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     try {
-      // 1. Guardar la donación en el Microservicio de Donaciones (Puerto 8081)
       const resDonacion = await fetch('http://localhost:8081/api/donacion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tipo: formData.tipo,
-          recurso: formData.recurso,
-          cantidad: formData.cantidad,
-          origen: "Aporte Ciudadano",
-          centroAcopioAsignado: formData.centroOrigen
-        })
+        body: JSON.stringify({ tipo: formData.tipo, recurso: formData.recurso, cantidad: formData.cantidad, origen: user.email, centroAcopioAsignado: formData.centroOrigen })
       });
-
-      // 2. Planificar el envío en el Microservicio de Logística (Puerto 8082)
       const resLogistica = await fetch('http://localhost:8082/api/envio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          centroAcopioOrigen: formData.centroOrigen,
-          destino: formData.destino,
-          patenteTransporte: "POR-ASIGNAR"
-        })
+        body: JSON.stringify({ centroAcopioOrigen: formData.centroOrigen, destino: formData.destino, patenteTransporte: "POR-ASIGNAR" })
       });
 
       if (resDonacion.ok && resLogistica.ok) {
-        alert(`¡Gracias! Tu donación de ${formData.cantidad} ${formData.recurso} ha sido registrada y el envío hacia ${formData.destino} está en preparación.`);
-        // Limpiar el formulario después de donar
-        setFormData({...formData, recurso: '', cantidad: 1});
+        alert("¡Gracias! Donación registrada exitosamente.");
+        setFormData({ ...formData, recurso: '', cantidad: 1 });
       } else {
-        alert("Hubo un error al procesar la donación. Inténtalo de nuevo.");
+        alert("Hubo un error al procesar la donación.");
       }
     } catch (error) {
-      console.error(error);
-      alert("Error de conexión con los servidores. Verifica que el backend esté encendido.");
+      alert("Error de conexión. Verifica que el backend esté encendido.");
     }
   };
 
   return (
-    <div className="app-container">
-      {/* Header tipo GoFundMe */}
-      <header className="header">
-        <h1 className="logo">❤️ DONATON</h1>
-        <p className="subtitle">Plataforma Inteligente de Ayuda Humanitaria</p>
-      </header>
-
-      {/* Carrusel de Emergencias */}
+    <>
       <section className="carousel-section">
         <div className="carousel">
           <img src={imagenes[imagenActual]} alt="Emergencia" className="carousel-image" />
-          <div className="carousel-overlay">
-            <h2>Tu ayuda llega a donde más se necesita</h2>
-          </div>
+          <div className="carousel-overlay"><h2>Tu ayuda llega a donde más se necesita</h2></div>
         </div>
       </section>
 
-      {/* Descripción extraída del Caso Semestral */}
       <section className="about-section">
         <h2>¿Qué es DONATON?</h2>
-        <p>
-          <strong>Donaton</strong> es una organización especializada en la gestión de ayuda humanitaria y coordinación de donaciones. 
-          Trabajamos de manera activa con diversas instituciones para llegar a las comunidades afectadas en las 
-          diversas situaciones de emergencia que se presentan en el país.
-        </p>
-        <p>
-          A través de nuestra red de voluntarios y centros de acopio, logramos recibir y distribuir eficientemente 
-          ropa, alimentos, insumos médicos y de higiene, garantizando que los recursos lleguen de manera oportuna 
-          para satisfacer las necesidades básicas de los damnificados.
-        </p>
+        <p><strong>Donaton</strong> es una organización especializada en la gestión de ayuda humanitaria...</p>
       </section>
 
-      {/* Formulario de Donación y Logística Unificado */}
       <section className="donate-section">
-        <div className="donate-card">
-          <h2>Haz tu Aporte</h2>
-          <form onSubmit={handleSubmit} className="donate-form">
-            
-            <div className="form-group">
-              <label>¿Qué tipo de ayuda vas a entregar?</label>
-              <select name="tipo" value={formData.tipo} onChange={handleChange}>
-                <option value="Alimento">Alimentos</option>
-                <option value="Ropa">Ropa de Abrigo</option>
-                <option value="Insumos Medicos">Insumos Médicos</option>
-                <option value="Higiene">Insumos de Higiene</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Describe el recurso (Ej. Saco de Arroz, Mascarillas):</label>
-              <input 
-                type="text" 
-                name="recurso" 
-                value={formData.recurso} 
-                onChange={handleChange} 
-                required 
-                placeholder="¿Qué contiene tu donación?"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Cantidad (Unidades/Kg):</label>
-              <input 
-                type="number" 
-                name="cantidad" 
-                value={formData.cantidad} 
-                onChange={handleChange} 
-                min="1" 
-                required 
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Centro de Acopio (¿Dónde lo entregas?):</label>
-              <select name="centroOrigen" value={formData.centroOrigen} onChange={handleChange}>
-                <option value="Centro Central Santiago">Centro Central Santiago</option>
-                <option value="Sede Valparaíso">Sede Valparaíso</option>
-                <option value="Gimnasio Concepción">Gimnasio Concepción</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Destino de tu Ayuda (¿A quién va dirigido?):</label>
-              <select name="destino" value={formData.destino} onChange={handleChange}>
-                <option value="Refugio Maipú">Refugio Maipú</option>
-                <option value="Campamento Viña del Mar">Campamento Viña del Mar</option>
-                <option value="Zona Cero Sur">Zona Cero Sur</option>
-              </select>
-            </div>
-
-            <button type="submit" className="donate-btn">Donar Ahora</button>
-          </form>
-        </div>
+        {user ? (
+          <div className="donate-card">
+            <h2>Haz tu Aporte</h2>
+            <form onSubmit={handleSubmit} className="donate-form">
+              <div className="form-group">
+                <label>Tipo de ayuda:</label>
+                <select name="tipo" value={formData.tipo} onChange={handleChange}>
+                  {opciones.tiposAyuda.map(opcion => <option key={opcion} value={opcion}>{opcion}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Recurso (Ej. Arroz):</label>
+                <input type="text" name="recurso" value={formData.recurso} onChange={handleChange} required />
+              </div>
+              <div className="form-group">
+                <label>Cantidad:</label>
+                <input type="number" name="cantidad" value={formData.cantidad} onChange={handleChange} min="1" required />
+              </div>
+              <div className="form-group">
+                <label>Centro de Acopio:</label>
+                <select name="centroOrigen" value={formData.centroOrigen} onChange={handleChange}>
+                  {opciones.centrosAcopio.map(opcion => <option key={opcion} value={opcion}>{opcion}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Destino:</label>
+                <select name="destino" value={formData.destino} onChange={handleChange}>
+                  {opciones.destinos.map(opcion => <option key={opcion} value={opcion}>{opcion}</option>)}
+                </select>
+              </div>
+              <button type="submit" className="donate-btn">Donar Ahora</button>
+            </form>
+          </div>
+        ) : (
+          <div className="donate-card locked-card">
+            <h2>Por favor Regístrese para realizar donaciones</h2>
+            <Link to="/register"><button className="donate-btn">Registrarse</button></Link>
+            <p className="login-hint">¿Ya estás registrado? <Link to="/login">Inicia Sesión</Link></p>
+          </div>
+        )}
       </section>
-    </div>
-  )
+    </>
+  );
 }
 
-export default App
+// --- COMPONENTES AUTH ---
+function Login({ setUser }) {
+  const [email, setEmail] = useState('');
+  const navigate = useNavigate();
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    // Simulación: Si el correo incluye 'admin', le damos rol admin
+    const role = email.includes('admin') ? 'admin' : 'user';
+    const userData = { email, role };
+    localStorage.setItem('donatonUser', JSON.stringify(userData));
+    setUser(userData);
+    navigate('/');
+  };
+
+  return (
+    <div className="auth-container">
+      <div className="donate-card">
+        <h2>Iniciar Sesión</h2>
+        <form onSubmit={handleLogin} className="donate-form">
+          <div className="form-group">
+            <label>Correo Electrónico:</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+          </div>
+          <button type="submit" className="donate-btn">Entrar</button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function Register({ setUser }) {
+  const [email, setEmail] = useState('');
+  const navigate = useNavigate();
+
+  const handleRegister = (e) => {
+    e.preventDefault();
+    const userData = { email, role: 'user' };
+    localStorage.setItem('donatonUser', JSON.stringify(userData));
+    setUser(userData);
+    navigate('/');
+  };
+
+  return (
+    <div className="auth-container">
+      <div className="donate-card">
+        <h2>Registro de Voluntario</h2>
+        <form onSubmit={handleRegister} className="donate-form">
+          <div className="form-group">
+            <label>Correo Electrónico:</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+          </div>
+          <button type="submit" className="donate-btn">Registrarme</button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// --- COMPONENTE ADMIN DASHBOARD ---
+function AdminDashboard({ user }) {
+  const [resumen, setResumen] = useState(null);
+
+  useEffect(() => {
+    fetch('http://localhost:8080/api/dashboard/resumen')
+      .then(res => res.json())
+      .then(data => setResumen(data))
+      .catch(err => console.error(err));
+  }, []);
+
+  if (!user || user.role !== 'admin') return <Navigate to="/" />;
+
+  return (
+    <div className="dashboard-container">
+      <h2>Panel de Control Administrador (BFF)</h2>
+      {resumen ? (
+        <pre className="json-display">{JSON.stringify(resumen, null, 2)}</pre>
+      ) : (
+        <p>Cargando datos desde el BFF...</p>
+      )}
+    </div>
+  );
+}
+
+// --- APP PRINCIPAL ---
+function App() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('donatonUser');
+    if (storedUser) setUser(JSON.parse(storedUser));
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('donatonUser');
+    setUser(null);
+  };
+
+  return (
+    <Router>
+      <div className="app-container">
+        <header className="header">
+          <Link to="/" className="logo-link"><h1 className="logo">❤️ DONATON</h1></Link>
+          <div className="header-actions">
+            {user ? (
+              <>
+                <span className="user-greeting">Hola, {user.email}</span>
+                {user.role === 'admin' && <Link to="/admin" className="nav-btn admin-btn">Dashboard Admin</Link>}
+                <button onClick={handleLogout} className="nav-btn logout-btn">Cerrar Sesión</button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="nav-btn">Ingresar</Link>
+                <Link to="/register" className="nav-btn primary">Registrarse</Link>
+              </>
+            )}
+          </div>
+        </header>
+
+        <Routes>
+          <Route path="/" element={<Home user={user} />} />
+          <Route path="/login" element={<Login setUser={setUser} />} />
+          <Route path="/register" element={<Register setUser={setUser} />} />
+          <Route path="/admin" element={<AdminDashboard user={user} />} />
+        </Routes>
+      </div>
+    </Router>
+  );
+}
+
+export default App;
