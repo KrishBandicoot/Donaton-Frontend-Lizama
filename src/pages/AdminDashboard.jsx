@@ -22,6 +22,7 @@ function AdminDashboard({ user }) {
         <h2>Panel de Control Administrativo</h2>
         <p className="dashboard-intro">Gestión centralizada de recursos y despachos de ayuda.</p>
       </div>
+      
       <div className="table-section">
         <h3>📦 Inventario de Donaciones (MySQL)</h3>
         <div className="table-responsive">
@@ -29,26 +30,47 @@ function AdminDashboard({ user }) {
             <thead><tr><th>ID</th><th>Tipo</th><th>Recurso</th><th>Cant.</th><th>Origen</th><th>Centro Asignado</th><th>Fecha Ingreso</th></tr></thead>
             <tbody>
               {resumen?.donaciones?.length > 0 ? resumen.donaciones.map(d => (
-                <tr key={d.id}><td>{d.id}</td><td><span className={`badge ${d.tipo.toLowerCase().replace(" ", "-")}`}>{d.tipo}</span></td><td>{d.recurso}</td><td>{d.cantidad}</td><td>{d.origen}</td><td>{d.centroAcopioAsignado}</td><td>{new Date(d.fechaIngreso).toLocaleString()}</td></tr>
+                <tr key={d.id}>
+                  <td>{d.id}</td>
+                  <td><span className={`badge ${d.tipo?.toLowerCase().replace(" ", "-")}`}>{d.tipo}</span></td>
+                  <td>{d.recurso}</td>
+                  <td>{d.cantidad}</td>
+                  <td>{d.origen}</td>
+                  <td>{d.centroAcopioAsignado}</td>
+                  <td>{d.fechaIngreso ? new Date(d.fechaIngreso).toLocaleString() : 'N/A'}</td>
+                </tr>
               )) : <tr><td colSpan="7" className="empty-msg">No hay donaciones registradas.</td></tr>}
             </tbody>
           </table>
         </div>
       </div>
+
       <div className="table-section">
         <h3>🚚 Estado de Envíos Logísticos (PostgreSQL)</h3>
-        {Array.isArray(resumen?.envios) ? (
+        {/* Aquí estaba el error: cambiamos resumen?.envios por resumen?.logistica */}
+        {Array.isArray(resumen?.logistica) ? (
           <div className="table-responsive">
             <table className="admin-table">
               <thead><tr><th>ID</th><th>Origen</th><th>Destino</th><th>Patente</th><th>Estado</th><th>Fecha Despacho</th></tr></thead>
               <tbody>
-                {resumen.envios.length > 0 ? resumen.envios.map(e => (
-                  <tr key={e.id}><td>{e.id}</td><td>{e.centroAcopioOrigen}</td><td>{e.destino}</td><td><code>{e.patenteTransporte}</code></td><td><span className={`status-pill ${e.estado.toLowerCase()}`}>{e.estado}</span></td><td>{e.fechaDespacho ? new Date(e.fechaDespacho).toLocaleString() : 'Pendiente'}</td></tr>
+                {resumen.logistica.length > 0 ? resumen.logistica.map(e => (
+                  <tr key={e.id}>
+                    <td>{e.id}</td>
+                    <td>{e.centroAcopioOrigen}</td>
+                    <td>{e.destino}</td>
+                    <td><code>{e.patenteTransporte}</code></td>
+                    <td><span className={`status-pill ${e.estado?.toLowerCase()}`}>{e.estado}</span></td>
+                    <td>{e.fechaDespacho ? new Date(e.fechaDespacho).toLocaleString() : 'Pendiente'}</td>
+                  </tr>
                 )) : <tr><td colSpan="6" className="empty-msg">No hay envíos programados.</td></tr>}
               </tbody>
             </table>
           </div>
-        ) : <div className="circuit-breaker-warning"><p>⚠️ {resumen?.envios || "Servicio de logística no responde."}</p></div>}
+        ) : (
+          <div className="circuit-breaker-warning">
+            <p>⚠️ {resumen?.logistica || "Servicio de logística no responde."}</p>
+          </div>
+        )}
       </div>
     </div>
   );
