@@ -1,0 +1,6 @@
+.auth-container { padding: 50px 20px; background-color: #fafafa; min-height: 70vh; display: flex; justify-content: center; align-items: flex-start; }
+.auth-card { background-color: #fff; border: 1px solid #e0e0e0; border-radius: 12px; padding: 35px; box-shadow: 0 8px 24px rgba(0,0,0,0.06); width: 100%; max-width: 450px; }
+.auth-card h2 { text-align: center; color: #333; margin-bottom: 25px; font-size: 1.8rem; }
+.auth-form { display: flex; flex-direction: column; gap: 18px; }
+.auth-btn { background-color: #02a95c; color: white; border: none; padding: 16px; font-size: 1.2rem; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 15px; transition: background-color 0.3s; width: 100%; }
+.auth-btn:hover { background-color: #028e4d; }
