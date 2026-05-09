@@ -13,7 +13,6 @@ function Home({ user }) {
   ]);
   const [imagenActual, setImagenActual] = useState(0);
 
-  // Cargar las opciones desde el backend (BFF)
   useEffect(() => {
     fetch('http://localhost:8080/api/dashboard/opciones')
       .then(res => res.json())
@@ -71,7 +70,8 @@ function Home({ user }) {
 
       <section className="about-section">
         <h2>¿Qué es DONATON?</h2>
-        <p><strong>Donaton</strong> es una organización especializada en la gestión de ayuda humanitaria...</p>
+        <p><strong>Donaton</strong> es una organización especializada en la gestión de ayuda humanitaria y coordinación de donaciones. Trabajamos de manera activa con diversas instituciones para llegar a las comunidades afectadas en las diversas situaciones de emergencia que se presentan en el país.</p>
+        <p>A través de nuestra red de voluntarios y centros de acopio, logramos recibir y distribuir eficientemente ropa, alimentos, insumos médicos y de higiene, garantizando que los recursos lleguen de manera oportuna para satisfacer las necesidades básicas de los damnificados.</p>
       </section>
 
       <section className="donate-section">
@@ -123,16 +123,25 @@ function Home({ user }) {
 // --- COMPONENTES AUTH ---
 function Login({ setUser }) {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = (e) => {
     e.preventDefault();
-    // Simulación: Si el correo incluye 'admin', le damos rol admin
-    const role = email.includes('admin') ? 'admin' : 'user';
-    const userData = { email, role };
-    localStorage.setItem('donatonUser', JSON.stringify(userData));
-    setUser(userData);
-    navigate('/');
+    // Obtener la base de datos simulada de usuarios
+    const usersDB = JSON.parse(localStorage.getItem('donatonUsersDB')) || [];
+    
+    // Buscar si el usuario existe y la clave coincide
+    const foundUser = usersDB.find(u => u.email === email && u.password === password);
+
+    if (foundUser) {
+      const userData = { email: foundUser.email, role: foundUser.role };
+      localStorage.setItem('donatonUser', JSON.stringify(userData));
+      setUser(userData);
+      navigate('/');
+    } else {
+      alert("Credenciales incorrectas o el usuario no existe.");
+    }
   };
 
   return (
@@ -144,6 +153,10 @@ function Login({ setUser }) {
             <label>Correo Electrónico:</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
           </div>
+          <div className="form-group">
+            <label>Contraseña:</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+          </div>
           <button type="submit" className="donate-btn">Entrar</button>
         </form>
       </div>
@@ -153,14 +166,30 @@ function Login({ setUser }) {
 
 function Register({ setUser }) {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
   const handleRegister = (e) => {
     e.preventDefault();
-    const userData = { email, role: 'user' };
-    localStorage.setItem('donatonUser', JSON.stringify(userData));
-    setUser(userData);
-    navigate('/');
+    const usersDB = JSON.parse(localStorage.getItem('donatonUsersDB')) || [];
+    
+    // Verificar si el correo ya fue registrado
+    const userExists = usersDB.find(u => u.email === email);
+
+    if (userExists) {
+      alert("Este correo ya está registrado. Por favor, inicia sesión.");
+    } else {
+      // Guardar el nuevo usuario en la DB simulada
+      const newUser = { email, password, role: 'user' };
+      usersDB.push(newUser);
+      localStorage.setItem('donatonUsersDB', JSON.stringify(usersDB));
+
+      // Iniciar sesión automáticamente
+      const userData = { email: newUser.email, role: newUser.role };
+      localStorage.setItem('donatonUser', JSON.stringify(userData));
+      setUser(userData);
+      navigate('/');
+    }
   };
 
   return (
@@ -171,6 +200,10 @@ function Register({ setUser }) {
           <div className="form-group">
             <label>Correo Electrónico:</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+          </div>
+          <div className="form-group">
+            <label>Crear Contraseña:</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} minLength="4" required />
           </div>
           <button type="submit" className="donate-btn">Registrarme</button>
         </form>
@@ -209,6 +242,15 @@ function App() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
+    // 1. INICIALIZAR LA BASE DE DATOS SIMULADA SI NO EXISTE
+    const usersDB = localStorage.getItem('donatonUsersDB');
+    if (!usersDB) {
+      localStorage.setItem('donatonUsersDB', JSON.stringify([
+        { email: 'admin@donaton.cl', password: 'admin', role: 'admin' }
+      ]));
+    }
+
+    // 2. RECUPERAR LA SESIÓN ACTIVA
     const storedUser = localStorage.getItem('donatonUser');
     if (storedUser) setUser(JSON.parse(storedUser));
   }, []);
