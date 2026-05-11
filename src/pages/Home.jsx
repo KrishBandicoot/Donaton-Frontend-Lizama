@@ -6,9 +6,9 @@ function Home({ user }) {
   const [opciones, setOpciones] = useState({ tiposAyuda: [], centrosAcopio: [], destinos: [] });
   const [formData, setFormData] = useState({ tipo: '', recurso: '', cantidad: 1, centroOrigen: '', destino: '' });
   const [imagenes] = useState([
-    "https://images.unsplash.com/photo-1602202651478-f6ed348e3573?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1542848284-8afa78a08ccb?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1614746684705-eb101e4db9a8?auto=format&fit=crop&w=1200&q=80"
+    "/images/desastres.jpg",
+    "/images/incendio.jpg",
+    "/images/terremotos.jpg"
   ]);
   const [imagenActual, setImagenActual] = useState(0);
 
