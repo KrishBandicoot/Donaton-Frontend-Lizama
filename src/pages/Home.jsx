@@ -4,7 +4,17 @@ import './Home.css';
 
 function Home({ user }) {
   const [opciones, setOpciones] = useState({ tiposAyuda: [], centrosAcopio: [], destinos: [] });
-  const [formData, setFormData] = useState({ tipo: '', recurso: '', cantidad: 1, centroOrigen: '', destino: '' });
+  
+  // AQUÍ: Agregamos "unidad" con un valor por defecto
+  const [formData, setFormData] = useState({ 
+    tipo: '', 
+    recurso: '', 
+    cantidad: 1, 
+    unidad: 'Unidades', 
+    centroOrigen: '', 
+    destino: '' 
+  });
+
   const [imagenes] = useState([
     "/images/desastres.jpg",
     "/images/incendio.jpg",
@@ -17,7 +27,14 @@ function Home({ user }) {
       .then(res => res.json())
       .then(data => {
         setOpciones(data);
-        setFormData({ tipo: data.tiposAyuda[0] || '', recurso: '', cantidad: 1, centroOrigen: data.centrosAcopio[0] || '', destino: data.destinos[0] || '' });
+        setFormData({ 
+          tipo: data.tiposAyuda[0] || '', 
+          recurso: '', 
+          cantidad: 1, 
+          unidad: 'Unidades', 
+          centroOrigen: data.centrosAcopio[0] || '', 
+          destino: data.destinos[0] || '' 
+        });
       })
       .catch(err => console.error(err));
 
@@ -30,10 +47,8 @@ function Home({ user }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Obtenemos el token de seguridad almacenado al iniciar sesión
       const token = localStorage.getItem('donatonToken');
 
-      // Petición al microservicio de donaciones con Token y DTO actualizado
       const resDonacion = await fetch('http://localhost:8081/api/donacion', {
         method: 'POST', 
         headers: { 
@@ -42,18 +57,17 @@ function Home({ user }) {
         },
         body: JSON.stringify({ 
           tipo: formData.tipo, 
-          recurso: formData.recurso, 
+          // AQUÍ: Juntamos el nombre del recurso con su unidad de medida
+          recurso: `${formData.recurso} (${formData.unidad})`, 
           cantidad: formData.cantidad, 
-          origen: "Plataforma Web", 
+          origen: user.username,
           centroAcopioAsignado: formData.centroOrigen,
-          // Datos extraídos de la sesión activa de forma transparente
-          tipoDonante: 'PERSONA',
+          tipoDonante: user.tipoUsuario || 'PERSONA',
           nombreRazonSocial: user.nombre,
           rut: 'Registrado en BD'
         })
       });
 
-      // Petición al microservicio de logística con Token
       const resLogistica = await fetch('http://localhost:8082/api/envio', {
         method: 'POST', 
         headers: { 
@@ -69,7 +83,7 @@ function Home({ user }) {
 
       if (resDonacion.ok && resLogistica.ok) {
         alert("¡Gracias! Donación registrada exitosamente.");
-        setFormData({ ...formData, recurso: '', cantidad: 1 });
+        setFormData({ ...formData, recurso: '', cantidad: 1, unidad: 'Unidades' });
       } else {
         alert("Error al procesar la donación. Verifica tus permisos de usuario.");
       }
@@ -105,8 +119,27 @@ function Home({ user }) {
             <h2>Haz tu Aporte</h2>
             <form onSubmit={handleSubmit} className="donate-form">
               <div className="form-group"><label>Tipo de ayuda:</label><select name="tipo" value={formData.tipo} onChange={handleChange}>{opciones.tiposAyuda.map(o => <option key={o} value={o}>{o}</option>)}</select></div>
-              <div className="form-group"><label>Recurso:</label><input type="text" name="recurso" value={formData.recurso} onChange={handleChange} required /></div>
-              <div className="form-group"><label>Cantidad:</label><input type="number" name="cantidad" value={formData.cantidad} onChange={handleChange} min="1" required /></div>
+              <div className="form-group"><label>Recurso (Ej: Arroz, Pañales):</label><input type="text" name="recurso" value={formData.recurso} onChange={handleChange} required /></div>
+              
+              {/* AQUÍ: Dividimos el input en Cantidad y Unidad de Medida */}
+              <div className="form-group" style={{ display: 'flex', gap: '15px' }}>
+                <div style={{ flex: 1 }}>
+                  <label>Cantidad:</label>
+                  <input type="number" name="cantidad" value={formData.cantidad} onChange={handleChange} min="1" required style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label>Medida:</label>
+                  <select name="unidad" value={formData.unidad} onChange={handleChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}>
+                    <option value="Unidades">Unidades</option>
+                    <option value="Cajas">Cajas</option>
+                    <option value="Sacos">Sacos</option>
+                    <option value="Kilos">Kilos</option>
+                    <option value="Litros">Litros</option>
+                    <option value="Pallets">Pallets</option>
+                  </select>
+                </div>
+              </div>
+
               <div className="form-group"><label>Centro de Acopio:</label><select name="centroOrigen" value={formData.centroOrigen} onChange={handleChange}>{opciones.centrosAcopio.map(o => <option key={o} value={o}>{o}</option>)}</select></div>
               <div className="form-group"><label>Destino:</label><select name="destino" value={formData.destino} onChange={handleChange}>{opciones.destinos.map(o => <option key={o} value={o}>{o}</option>)}</select></div>
               <button type="submit" className="donate-btn">Donar Ahora</button>
@@ -123,5 +156,4 @@ function Home({ user }) {
     </>
   );
 }
-//testing commit//
 export default Home;

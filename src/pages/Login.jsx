@@ -20,13 +20,14 @@ const handleLogin = async (e) => {
       if (response.ok) {
         const data = await response.json(); 
         localStorage.setItem('donatonToken', data.token);
-        const userData = { username: data.username, role: data.rol, nombre: data.nombre };
+        
+        // Guardamos también el tipoUsuario
+        const userData = { username: data.username, role: data.rol, nombre: data.nombre, tipoUsuario: data.tipoUsuario };
+        
         localStorage.setItem('donatonUser', JSON.stringify(userData));
         setUser(userData);
         navigate('/');
       } else {
-        // AQUÍ ESTÁ LA CORRECCIÓN: 
-        // Si el código es 401, el usuario se equivocó de clave/email
         if (response.status === 401) {
             alert("Error: El correo o la contraseña son incorrectos.");
         } else {
@@ -34,7 +35,6 @@ const handleLogin = async (e) => {
         }
       }
     } catch (error) {
-      // Este bloque solo se activa si el servidor está realmente APAGADO
       alert("Error de red: No se pudo conectar con el servidor. Verifica que el BFF esté levantado.");
     }
   };

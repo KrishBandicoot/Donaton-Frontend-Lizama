@@ -9,9 +9,11 @@ function AdminDashboard({ user }) {
   const [donaciones, setDonaciones] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [logistica, setLogistica] = useState([]);
+  const [catalogos, setCatalogos] = useState([]); // NUEVO ESTADO
+
+  const [nuevoCatalogo, setNuevoCatalogo] = useState({ tipoCatalogo: 'TIPO_AYUDA', valor: '' });
 
   useEffect(() => {
-    // CORRECCIÓN: Evita que te expulse al recargar leyendo del localStorage si 'user' llega null
     const savedUser = user || JSON.parse(localStorage.getItem('donatonUser'));
     
     if (!savedUser || savedUser.role !== 'ROLE_ADMIN') {
@@ -40,6 +42,7 @@ function AdminDashboard({ user }) {
         if (tab === 'donaciones') setDonaciones(data);
         if (tab === 'usuarios') setUsuarios(data);
         if (tab === 'logistica') setLogistica(data);
+        if (tab === 'catalogos') setCatalogos(data); // NUEVO
       }
     } catch (error) {
       console.error("Error cargando datos:", error);
@@ -76,7 +79,7 @@ function AdminDashboard({ user }) {
       if (!nuevoValor) return;
       payload = { patenteTransporte: nuevoValor };
     } else if (tipo === 'usuarios') {
-      payload = { rol: nuevoRol }; // Aquí recibe el valor del select
+      payload = { rol: nuevoRol };
     }
 
     try {
@@ -98,6 +101,27 @@ function AdminDashboard({ user }) {
     }
   };
 
+  // NUEVA FUNCIÓN PARA CREAR OPCIONES
+  const handleCrearCatalogo = async () => {
+    if (!nuevoCatalogo.valor) return alert("Por favor, ingresa un valor.");
+    try {
+      const response = await fetch(`http://localhost:8080/api/admin/catalogos`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(nuevoCatalogo)
+      });
+
+      if (response.ok) {
+        setNuevoCatalogo({ ...nuevoCatalogo, valor: '' });
+        cargarDatos('catalogos');
+      } else {
+        alert('Error al crear la opción.');
+      }
+    } catch (error) {
+      console.error("Error al crear:", error);
+    }
+  };
+
   return (
     <div className="dashboard-container" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
       <h2 style={{ borderBottom: '3px solid #ffc107', paddingBottom: '10px' }}>Panel de Administración Central</h2>
@@ -112,6 +136,9 @@ function AdminDashboard({ user }) {
         <button onClick={() => setActiveTab('usuarios')} style={{ padding: '10px 20px', backgroundColor: activeTab === 'usuarios' ? '#0056b3' : '#ccc', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>
           Gestión de Usuarios
         </button>
+        <button onClick={() => setActiveTab('catalogos')} style={{ padding: '10px 20px', backgroundColor: activeTab === 'catalogos' ? '#28a745' : '#ccc', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>
+          Configuración
+        </button>
       </div>
 
       <div className="tab-content" style={{ backgroundColor: '#f9f9f9', padding: '20px', borderRadius: '8px', border: '1px solid #ddd' }}>
@@ -124,6 +151,8 @@ function AdminDashboard({ user }) {
               <thead>
                 <tr style={{ backgroundColor: '#e9ecef', textAlign: 'left' }}>
                   <th style={{ padding: '10px' }}>ID</th>
+                  <th style={{ padding: '10px' }}>Origen (Correo)</th>
+                  <th style={{ padding: '10px' }}>Donante</th>
                   <th style={{ padding: '10px' }}>Tipo</th>
                   <th style={{ padding: '10px' }}>Recurso</th>
                   <th style={{ padding: '10px' }}>Cantidad</th>
@@ -131,9 +160,11 @@ function AdminDashboard({ user }) {
                 </tr>
               </thead>
               <tbody>
-                {donaciones.length === 0 ? <tr><td colSpan="5" style={{ padding: '10px', textAlign: 'center' }}>No hay donaciones registradas</td></tr> : donaciones.map(d => (
+                {donaciones.length === 0 ? <tr><td colSpan="7" style={{ padding: '10px', textAlign: 'center' }}>No hay donaciones registradas</td></tr> : donaciones.map(d => (
                   <tr key={d.id} style={{ borderBottom: '1px solid #ddd' }}>
                     <td style={{ padding: '10px' }}>{d.id}</td>
+                    <td style={{ padding: '10px' }}>{d.origen}</td> 
+                    <td style={{ padding: '10px' }}>{d.tipoDonante}</td> 
                     <td style={{ padding: '10px' }}>{d.tipo}</td>
                     <td style={{ padding: '10px' }}>{d.recurso}</td>
                     <td style={{ padding: '10px' }}>{d.cantidad}</td>
@@ -201,7 +232,6 @@ function AdminDashboard({ user }) {
                     <td style={{ padding: '10px' }}>{u.username}</td>
                     <td style={{ padding: '10px' }}>{u.nombre}</td>
                     <td style={{ padding: '10px' }}>
-                      {/* SELECT DE ROL */}
                       <select value={u.rol} onChange={(e) => handleEditar(u.id, 'usuarios', u, e.target.value)}>
                         <option value="ROLE_USER">ROLE_USER</option>
                         <option value="ROLE_ADMIN">ROLE_ADMIN</option>
@@ -209,6 +239,65 @@ function AdminDashboard({ user }) {
                     </td>
                     <td style={{ padding: '10px' }}>
                       <button onClick={() => handleEliminar(u.id, 'usuarios')} style={{ color: '#fff', backgroundColor: '#dc3545', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}>Eliminar</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* --- NUEVA PESTAÑA: CONFIGURACIÓN (CATÁLOGOS) --- */}
+        {activeTab === 'catalogos' && (
+          <div>
+            <h3>Configuración de Opciones del Formulario</h3>
+            
+            <div style={{ backgroundColor: '#fff', padding: '15px', border: '1px solid #ddd', borderRadius: '5px', marginBottom: '20px' }}>
+              <h4 style={{ marginTop: '0' }}>Agregar Nueva Opción</h4>
+              <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                <select 
+                  value={nuevoCatalogo.tipoCatalogo} 
+                  onChange={(e) => setNuevoCatalogo({ ...nuevoCatalogo, tipoCatalogo: e.target.value })}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                >
+                  <option value="TIPO_AYUDA">Tipo de Ayuda</option>
+                  <option value="CENTRO_ACOPIO">Centro de Acopio</option>
+                  <option value="DESTINO">Destino</option>
+                </select>
+                
+                <input 
+                  type="text" 
+                  placeholder="Ejemplo: Ropa de Invierno" 
+                  value={nuevoCatalogo.valor} 
+                  onChange={(e) => setNuevoCatalogo({ ...nuevoCatalogo, valor: e.target.value })}
+                  style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                />
+                
+                <button onClick={handleCrearCatalogo} style={{ backgroundColor: '#28a745', color: '#fff', border: 'none', padding: '9px 15px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+                  Guardar Opción
+                </button>
+              </div>
+            </div>
+
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '15px' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#e9ecef', textAlign: 'left' }}>
+                  <th style={{ padding: '10px' }}>ID</th>
+                  <th style={{ padding: '10px' }}>Categoría</th>
+                  <th style={{ padding: '10px' }}>Valor</th>
+                  <th style={{ padding: '10px' }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {catalogos.length === 0 ? <tr><td colSpan="4" style={{ padding: '10px', textAlign: 'center' }}>No hay opciones configuradas</td></tr> : catalogos.map(c => (
+                  <tr key={c.id} style={{ borderBottom: '1px solid #ddd' }}>
+                    <td style={{ padding: '10px' }}>{c.id}</td>
+                    <td style={{ padding: '10px' }}>
+                      {c.tipoCatalogo === 'TIPO_AYUDA' ? 'Tipo de Ayuda' : c.tipoCatalogo === 'CENTRO_ACOPIO' ? 'Centro de Acopio' : 'Destino'}
+                    </td>
+                    <td style={{ padding: '10px' }}>{c.valor}</td>
+                    <td style={{ padding: '10px' }}>
+                      <button onClick={() => handleEliminar(c.id, 'catalogos')} style={{ color: '#fff', backgroundColor: '#dc3545', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}>Eliminar</button>
                     </td>
                   </tr>
                 ))}

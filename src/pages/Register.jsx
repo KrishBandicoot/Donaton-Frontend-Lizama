@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './Auth.css';
 
-// Agregamos la prop setUser para poder actualizar el estado global de la app
 function Register({ setUser }) {
   const [tipoUsuario, setTipoUsuario] = useState('PERSONA');
   
@@ -48,11 +47,11 @@ function Register({ setUser }) {
     const payload = {
       username: username,
       password: password,
-      nombre: nombreFinal
+      nombre: nombreFinal,
+      tipoUsuario: tipoUsuario // Se envía al backend si es Empresa o Persona
     };
 
     try {
-      // 1. Petición para registrar al usuario
       const response = await fetch('http://localhost:8080/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -60,11 +59,10 @@ function Register({ setUser }) {
       });
 
       if (response.ok) {
-        // 2. Si el registro es exitoso, hacemos Auto-Login inmediatamente
         const loginResponse = await fetch('http://localhost:8080/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }) // Usamos las mismas credenciales recién creadas
+          body: JSON.stringify({ username, password }) 
         });
 
       if (loginResponse.ok) {
@@ -72,15 +70,14 @@ function Register({ setUser }) {
                 
                 localStorage.setItem('donatonToken', data.token);
                 
-                // ¡CAMBIO CLAVE AQUÍ TAMBIÉN!
-                const userData = { username: data.username, role: data.rol, nombre: data.nombre };
+                // Guardamos también el tipoUsuario en la sesión
+                const userData = { username: data.username, role: data.rol, nombre: data.nombre, tipoUsuario: data.tipoUsuario };
                 
                 localStorage.setItem('donatonUser', JSON.stringify(userData));
                 
                 setUser(userData); 
                 navigate('/'); 
               } else {
-          // Fallback por si ocurre un error extraño en el login
           alert('Cuenta creada exitosamente, pero hubo un problema al iniciar sesión automáticamente. Por favor, ingresa tus datos.');
           navigate('/login');
         }
