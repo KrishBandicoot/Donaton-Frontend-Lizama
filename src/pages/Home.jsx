@@ -30,20 +30,52 @@ function Home({ user }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Obtenemos el token de seguridad almacenado al iniciar sesión
+      const token = localStorage.getItem('donatonToken');
+
+      // Petición al microservicio de donaciones con Token y DTO actualizado
       const resDonacion = await fetch('http://localhost:8081/api/donacion', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tipo: formData.tipo, recurso: formData.recurso, cantidad: formData.cantidad, origen: user.email, centroAcopioAsignado: formData.centroOrigen })
+        method: 'POST', 
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ 
+          tipo: formData.tipo, 
+          recurso: formData.recurso, 
+          cantidad: formData.cantidad, 
+          origen: "Plataforma Web", 
+          centroAcopioAsignado: formData.centroOrigen,
+          // Datos extraídos de la sesión activa de forma transparente
+          tipoDonante: 'PERSONA',
+          nombreRazonSocial: user.nombre,
+          rut: 'Registrado en BD'
+        })
       });
+
+      // Petición al microservicio de logística con Token
       const resLogistica = await fetch('http://localhost:8082/api/envio', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ centroAcopioOrigen: formData.centroOrigen, destino: formData.destino, patenteTransporte: "POR-ASIGNAR" })
+        method: 'POST', 
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          centroAcopioOrigen: formData.centroOrigen, 
+          destino: formData.destino, 
+          patenteTransporte: "POR-ASIGNAR" 
+        })
       });
 
       if (resDonacion.ok && resLogistica.ok) {
         alert("¡Gracias! Donación registrada exitosamente.");
         setFormData({ ...formData, recurso: '', cantidad: 1 });
-      } else alert("Error al procesar la donación.");
-    } catch (error) { alert("Error de conexión."); }
+      } else {
+        alert("Error al procesar la donación. Verifica tus permisos de usuario.");
+      }
+    } catch (error) { 
+      alert("Error de conexión con el servidor."); 
+    }
   };
 
   return (
