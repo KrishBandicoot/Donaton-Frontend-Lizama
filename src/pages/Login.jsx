@@ -7,7 +7,7 @@ function Login({ setUser }) {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-const handleLogin = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     
     try {
@@ -21,7 +21,6 @@ const handleLogin = async (e) => {
         const data = await response.json(); 
         localStorage.setItem('donatonToken', data.token);
         
-        // Guardamos también el tipoUsuario
         const userData = { username: data.username, role: data.rol, nombre: data.nombre, tipoUsuario: data.tipoUsuario };
         
         localStorage.setItem('donatonUser', JSON.stringify(userData));
@@ -45,12 +44,13 @@ const handleLogin = async (e) => {
         <h2>Iniciar Sesión</h2>
         <form onSubmit={handleLogin} className="auth-form">
           <div className="form-group">
-            <label>Usuario (Correo):</label>
-            <input type="text" value={username} onChange={e => setUsername(e.target.value)} required />
+            {/* CORRECCIÓN: Se enlaza el label con el input mediante htmlFor e id */}
+            <label htmlFor="login-username">Usuario (Correo):</label>
+            <input id="login-username" type="text" value={username} onChange={e => setUsername(e.target.value)} required />
           </div>
           <div className="form-group">
-            <label>Contraseña:</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+            <label htmlFor="login-password">Contraseña:</label>
+            <input id="login-password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
           </div>
           <button type="submit" className="auth-btn">Entrar</button>
         </form>
