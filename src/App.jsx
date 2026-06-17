@@ -9,49 +9,70 @@ import './App.css';
 function App() {
   const [user, setUser] = useState(null);
 
+  // Mantener la sesión iniciada al recargar la página
   useEffect(() => {
-    const usersDB = localStorage.getItem('donatonUsersDB');
-    if (!usersDB) {
-      localStorage.setItem('donatonUsersDB', JSON.stringify([
-        { email: 'admin@donaton.cl', password: 'admin', role: 'admin' }
-      ]));
-    }
     const storedUser = localStorage.getItem('donatonUser');
-    if (storedUser) setUser(JSON.parse(storedUser));
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('donatonUser');
+    localStorage.removeItem('donatonToken');
     setUser(null);
+    window.location.href = '/';
   };
 
   return (
     <Router>
       <div className="app-container">
-        <header className="header">
-          <Link to="/" className="logo-link"><h1 className="logo">❤️ DONATON</h1></Link>
-          <div className="header-actions">
+        
+        {/* Barra de Navegación Principal */}
+        <nav className="navbar">
+          {/* LADO IZQUIERDO: Logo */}
+          <div className="nav-left">
+            <Link to="/" className="nav-brand">
+              DONATON
+            </Link>
+          </div>
+          
+          {/* LADO DERECHO: Acciones de Usuario */}
+          <div className="nav-right">
             {user ? (
               <>
-                <span className="user-greeting">Hola, {user.email}</span>
-                {user.role === 'admin' && <Link to="/admin" className="nav-btn admin-btn">Dashboard Admin</Link>}
-                <button onClick={handleLogout} className="nav-btn logout-btn">Cerrar Sesión</button>
+                {/* Botón de Dashboard solo si es Admin */}
+                {user.role === 'ROLE_ADMIN' && (
+                  <Link to="/admin" className="nav-btn admin-btn">
+                    Dashboard
+                  </Link>
+                )}
+                
+                <span className="user-greeting">
+                  Hola, {user.nombre}
+                </span>
+                
+                <button onClick={handleLogout} className="nav-btn logout-btn">
+                  Cerrar Sesión
+                </button>
               </>
             ) : (
               <>
-                <Link to="/login" className="nav-btn">Ingresar</Link>
-                <Link to="/register" className="nav-btn primary">Registrarse</Link>
+                <Link to="/login" className="nav-btn login-btn">Iniciar Sesión</Link>
+                <Link to="/register" className="nav-btn register-btn">Registrarse</Link>
               </>
             )}
           </div>
-        </header>
+        </nav>
 
+        {/* Rutas de la Aplicación */}
         <Routes>
           <Route path="/" element={<Home user={user} />} />
           <Route path="/login" element={<Login setUser={setUser} />} />
           <Route path="/register" element={<Register setUser={setUser} />} />
           <Route path="/admin" element={<AdminDashboard user={user} />} />
         </Routes>
+
       </div>
     </Router>
   );
