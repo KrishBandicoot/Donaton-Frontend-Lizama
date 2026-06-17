@@ -48,7 +48,7 @@ function Register({ setUser }) {
       username: username,
       password: password,
       nombre: nombreFinal,
-      tipoUsuario: tipoUsuario // Se envía al backend si es Empresa o Persona
+      tipoUsuario: tipoUsuario 
     };
 
     try {
@@ -67,14 +67,9 @@ function Register({ setUser }) {
 
       if (loginResponse.ok) {
                 const data = await loginResponse.json(); 
-                
                 localStorage.setItem('donatonToken', data.token);
-                
-                // Guardamos también el tipoUsuario en la sesión
                 const userData = { username: data.username, role: data.rol, nombre: data.nombre, tipoUsuario: data.tipoUsuario };
-                
                 localStorage.setItem('donatonUser', JSON.stringify(userData));
-                
                 setUser(userData); 
                 navigate('/'); 
               } else {
@@ -101,37 +96,53 @@ function Register({ setUser }) {
 
         <div className="tipo-usuario-selector" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
           <label style={{ cursor: 'pointer' }}>
-            <input type="radio" value="PERSONA" checked={tipoUsuario === 'PERSONA'} onChange={() => setTipoUsuario('PERSONA')} /> Individuo
+            {/* CORRECCIÓN DE ACCESIBILIDAD TAMBIÉN PARA LOS RADIOS */}
+            <input id="radio-persona" type="radio" value="PERSONA" checked={tipoUsuario === 'PERSONA'} onChange={() => setTipoUsuario('PERSONA')} /> Individuo
           </label>
           <label style={{ cursor: 'pointer' }}>
-            <input type="radio" value="EMPRESA" checked={tipoUsuario === 'EMPRESA'} onChange={() => setTipoUsuario('EMPRESA')} /> Empresa
+            <input id="radio-empresa" type="radio" value="EMPRESA" checked={tipoUsuario === 'EMPRESA'} onChange={() => setTipoUsuario('EMPRESA')} /> Empresa
           </label>
         </div>
 
         <form onSubmit={handleRegister} className="auth-form">
           <div className="form-group">
-            <label>Correo Electrónico (Usuario):</label>
-            <input type="email" value={username} onChange={e => setUsername(e.target.value)} placeholder="ejemplo@correo.cl" required />
+            <label htmlFor="reg-email">Correo Electrónico (Usuario):</label>
+            <input id="reg-email" type="email" value={username} onChange={e => setUsername(e.target.value)} placeholder="ejemplo@correo.cl" required />
           </div>
 
           {tipoUsuario === 'PERSONA' && (
             <>
-              <div className="form-group"><label>Nombre:</label><input type="text" value={nombre} onChange={e => setNombre(e.target.value)} required /></div>
-              <div className="form-group"><label>Apellido:</label><input type="text" value={apellido} onChange={e => setApellido(e.target.value)} required /></div>
-              <div className="form-group"><label>RUT:</label><input type="text" value={rutPersona} onChange={e => setRutPersona(e.target.value)} placeholder="12.345.678-9" required /></div>
+              <div className="form-group">
+                <label htmlFor="reg-nombre">Nombre:</label>
+                <input id="reg-nombre" type="text" value={nombre} onChange={e => setNombre(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label htmlFor="reg-apellido">Apellido:</label>
+                <input id="reg-apellido" type="text" value={apellido} onChange={e => setApellido(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label htmlFor="reg-rut">RUT:</label>
+                <input id="reg-rut" type="text" value={rutPersona} onChange={e => setRutPersona(e.target.value)} placeholder="12.345.678-9" required />
+              </div>
             </>
           )}
 
           {tipoUsuario === 'EMPRESA' && (
             <>
-              <div className="form-group"><label>Razón Social:</label><input type="text" value={razonSocial} onChange={e => setRazonSocial(e.target.value)} placeholder="Nombre legal de la empresa" required /></div>
-              <div className="form-group"><label>RUT Empresa:</label><input type="text" value={rutEmpresa} onChange={e => setRutEmpresa(e.target.value)} placeholder="76.000.000-K" required /></div>
+              <div className="form-group">
+                <label htmlFor="reg-razon">Razón Social:</label>
+                <input id="reg-razon" type="text" value={razonSocial} onChange={e => setRazonSocial(e.target.value)} placeholder="Nombre legal de la empresa" required />
+              </div>
+              <div className="form-group">
+                <label htmlFor="reg-rut-empresa">RUT Empresa:</label>
+                <input id="reg-rut-empresa" type="text" value={rutEmpresa} onChange={e => setRutEmpresa(e.target.value)} placeholder="76.000.000-K" required />
+              </div>
             </>
           )}
 
           <div className="form-group">
-            <label>Contraseña:</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo 8 caracteres, 1 número y 1 símbolo" required />
+            <label htmlFor="reg-password">Contraseña:</label>
+            <input id="reg-password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo 8 caracteres, 1 número y 1 símbolo" required />
           </div>
 
           <button type="submit" className="auth-btn">Registrarse</button>
